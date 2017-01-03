@@ -434,7 +434,7 @@ exec_status_t jmp_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op)
 
 	pc = dst;
 
-	writeback_src_ops(vcpu, dst_disp, dst_mode, isa_mode);	
+//	writeback_src_ops(vcpu, dst_disp, dst_mode, isa_mode);	
 	SET_PC(vcpu, pc);
 
 	return EXEC_SUCCESS;

@@ -22,74 +22,6 @@ uint8_t exec_array[] =
 	0b00000011, 0b00000000, 0b01111111, 0b01111111
 };
 
-void hex_to_bin(char sym, char* buf)
-{
-	switch (sym)
-	{
-		case '0':
-			memcpy(buf, "0000", 4);
-			break;
-		case '1':
-			memcpy(buf, "0001", 4);
-			break;
-		case '2':
-			memcpy(buf, "0010", 4);
-			break;
-		case '3':
-			memcpy(buf, "0011", 4);
-			break;
-		case '4':
-			memcpy(buf, "0100", 4);
-			break;
-		case '5':
-			memcpy(buf, "0101", 4);
-			break;		
-		case '6':
-			memcpy(buf, "0110", 4);
-			break;		
-		case '7':
-			memcpy(buf, "0111", 4);
-			break;	
-		case '8':
-			memcpy(buf, "1000", 4);
-			break;
-		case '9':
-			memcpy(buf, "1001", 4);
-			break;
-		case 'a':
-			memcpy(buf, "1010", 4);
-			break;		
-		case 'b':
-			memcpy(buf, "1011", 4);
-			break;		
-		case 'c':
-			memcpy(buf, "1100", 4);
-			break;	
-		case 'd':
-			memcpy(buf, "1101", 4);
-			break;
-		case 'e':
-			memcpy(buf, "1110", 4);
-			break;
-		case 'f':
-			memcpy(buf, "1111", 4);
-			break;
-		default:
-			break;
-	}
-}
-
-
-typedef struct storage
-{
-	uint8_t val;
-	union
-	{
-		uint8_t hi : 4;
-		uint8_t lo : 4;
-	}
-} __attribute__((packed)) storage_t;
-
 
 int load_from_rom(char* path, void* mem)
 {
@@ -105,57 +37,6 @@ int load_from_rom(char* path, void* mem)
 	printf("size: %lld\n", size);
 
 	void* mapped_area = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
-
-/*
-	storage_t* buf = malloc(sizeof(storage_t) * ((size * 4)/sizeof(uint8_t)));
-
-	char* num = malloc(sizeof(char) * 4);
-
-
-	int i = 0, j = 0;
-	int res = 0;
-	int is_hi = 0;
-	int k = 0;
-
-	for (i = 0; i < size * 4; i++)
-	{
- 		res = 0;	
-
-		for (k = 0; k < 2; k ++)	
-	 	{
-	 		hex_to_bin(((char*)mapped_area)[i * 2 + k], num);
-		 		
-	 		for (j = 0; j < 4; j++)
-	  		{	
-	  			res += (num[j] - '0') * ((1 << 4 - j - 1));
-	  		}
-
-	 		if (!is_hi)
-	 		{	
-	 			(buf[i]).hi = res;
-				is_hi = 1;
-			}
-			else
-			{	
-				(buf[i]).lo = res;
-				is_hi = 0;			
-			}
-		}
-	}	
-
-	printf("buf: %x\n", buf[0]);
-	printf("buf: %x\n", buf[1]);
-	printf("buf: %x\n", buf[2]);
-	printf("buf: %x\n", buf[3]);		
-
-	memcpy((uint8_t*)mem + 0x200, buf, size/sizeof(uint8_t));
-
-	printf("mem: %x\n", *(uint8_t*)((uint8_t*)mem + 0x200));
-	printf("mem: %x\n", *(uint8_t*)((uint8_t*)mem + 0x201));
-	printf("mem: %x\n", *(uint8_t*)((uint8_t*)mem + 0x202));
-	printf("mem: %x\n", *(uint8_t*)((uint8_t*)mem + 0x203));
-*/
-
 
 	uint8_t* buf = malloc(sizeof(uint8_t) * (size/sizeof(uint8_t))); 
 
@@ -174,28 +55,6 @@ int load_from_rom(char* path, void* mem)
 
 	
 	memcpy((uint8_t*)mem + 0x200, buf, size/sizeof(uint8_t));
-
-	return 0;
-}
-
-
-
-int read_file(char* path, void* mem)
-{
-
-	int size = sizeof(exec_array);
-
-	printf("array size: %d\n", size);
-
-	memcpy(mem, exec_array, size);
-
-	int i = 0;
-
-	for (i = 0; i < size; i++)
-	{
-		printf("mem: 0x%x\n", ((uint8_t*)mem)[i]);
-
-	}
 
 	return 0;
 }
@@ -220,11 +79,16 @@ int vcpu_init(vcpu_t* vcpu, void* mem, char* path_to_rom)
 //	vcpu->regs[SP];			// FIXME: Need to deal with it 
 
 	vcpu->regs[PC] = 0x200;
-
+	
 	vcpu->psw = (uint16_t*)((uint8_t*)mem + PS_ADDR);
 	vcpu->br_points = (uint8_t*)((uint8_t*)mem + BR_POINT_ADDR);
 	vcpu->kb_stat_reg = (uint16_t*)((uint8_t*)mem + KB_STAT_REG);
 	vcpu->kb_data_reg = (uint16_t*)((uint8_t*)mem + KB_DATA_REG);
+	vcpu->out_stat_reg = (uint16_t*)((uint8_t*)mem + OUT_STAT_REG);
+	vcpu->out_data_reg = (uint16_t*)((uint8_t*)mem + OUT_DATA_REG);
+
+	INIT_OUT_STAT_REG(vcpu);
+// FIXME: Need to enable kb and out stat regs 
 
 	PS_INIT(vcpu);
 
@@ -272,59 +136,6 @@ int emu_init(vcpu_t* vcpu, char* path_to_rom)
 	return 0;
 }
 
-/*
-int vcpu_init(vcpu_t* vcpu, void* mem, char* path_to_rom)
-{
-	printf("vcpu init\n");	
-	vcpu->mem_entry = mem;
-	vcpu->regs = (uint16_t*)((uint8_t*)mem + MEM_SPACE_SIZE);
-
-//	vcpu->regs[PC] = 0x0000;
-
-//	vcpu->regs[SP];			// FIXME: Need to deal with it 
-
-	vcpu->regs[PC] = 0x200;
-
-	vcpu->psw = (uint16_t*)((uint8_t*)mem + PS_ADDR);
-	vcpu->br_points = (uint8_t*)((uint8_t*)mem + BR_POINT_ADDR);
-	vcpu->kb_stat_reg = (uint16_t*)((uint8_t*)mem + KB_STAT_REG);
-	vcpu->kb_data_reg = (uint16_t*)((uint8_t*)mem + KB_DATA_REG);
-
-	PS_INIT(vcpu);
-
-	vcpu->stop_flag = 0;
-	vcpu->step_flag = 0;
-
-	// FIXME: if to write LOAD_N() here 
-	// SEGMENTATION FAULT WILL OCCUR						
-
-//	read_file("rom_file.txt", vcpu->mem_entry);
-
-	load_from_rom(path_to_rom, vcpu->mem_entry);
-
-		
-
-	return 0;
-}
-*/
-/*
-int emu_init(vcpu_t* vcpu, char* path_to_rom)
-{
-	void* mem_entry = mmap(NULL, ADDR_SPACE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0); 
-
-	if (mem_entry == (void*)-1)
-	{
-		printf("Mem allocation failed (mmap)\n");
-		abort();
-	}
-
-	vcpu_init(vcpu, mem_entry, path_to_rom);
-
-	return 0;
-}
-*/
-
-
 uint16_t fetch_instr(vcpu_t* vcpu)
 {
 	printf(" ------- \n");
@@ -342,7 +153,6 @@ uint16_t fetch_instr(vcpu_t* vcpu)
 	}
 	else
 	{
-//		printf("PC: 0x%llx\n", vcpu->regs[PC]);
 		printf("PC: %o\n", vcpu->regs[PC]);	
 	}
 
@@ -367,6 +177,7 @@ void vcpu_print(vcpu_t* vcpu)
 	printf("REG 7: 0x%x\n", vcpu->regs[PC]);						
 */
 
+/*
 	printf("REG 0: %o\n", vcpu->regs[REG0]);
 	printf("REG 1: %o\n", vcpu->regs[REG1]);
 	printf("REG 2: %o\n", vcpu->regs[REG2]);
@@ -375,6 +186,10 @@ void vcpu_print(vcpu_t* vcpu)
 	printf("REG 5: %o\n", vcpu->regs[REG5]);
 	printf("REG 6: %o\n", vcpu->regs[SP]);
 	printf("REG 7: %o\n", vcpu->regs[PC]);
+*/
+	printf("REG 0: %o REG 1: %o REG 2: %o REG 3: %o REG 4: %o REG 5: %o REG 6: %o REG 7: %o\n",  
+		vcpu->regs[REG0], vcpu->regs[REG1], vcpu->regs[REG2], vcpu->regs[REG3], 
+		vcpu->regs[REG4], vcpu->regs[REG5], vcpu->regs[SP], vcpu->regs[PC]);
 
 	uint8_t n = 0, z = 0, v = 0, c = 0;
 
@@ -383,7 +198,7 @@ void vcpu_print(vcpu_t* vcpu)
 	GET_V(vcpu, v);
 	GET_C(vcpu, c);	
 
-	printf("\nflags: n:%d z:%d v:%d c:%d\n", n, z, v, c);
+	printf("flags: n:%d z:%d v:%d c:%d\n", n, z, v, c);
 
 }
 
@@ -412,7 +227,7 @@ exec_status_t cpu_exec(vcpu_t* vcpu)
 	lookup_table(op, &instr);
 
 	if (instr == NULL)				// FIXME: Need to deal with it properly
-		return EXEC_UNDEFINED;
+		return EXEC_UNDEFINED;		// Such case lead to seg fault, need to fix
 
 	exec_status_t st = instr->execute(vcpu, instr, op);
 

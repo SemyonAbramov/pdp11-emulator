@@ -51,7 +51,8 @@ exec_status_t jmp_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op);
 /* subroutine and interrupts */
 
 exec_status_t rti_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op);
-
+exec_status_t jsr_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op);
+exec_status_t rts_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op);
 
 /* miscellaneous */
 

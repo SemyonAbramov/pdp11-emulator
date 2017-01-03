@@ -51,6 +51,8 @@ instr_desc_t instr_table[] =
 	{0xff00, 0x8700, "blo", blo_emu},
 	{0x7FC0, 0x0040, "jmp", jmp_emu},
 	{0xffff, 0x0002, "rti", rti_emu},
+	{0xfe00, 0x0800, "jsr", jsr_emu},
+	{0xfff8, 0x0080, "rts", rts_emu},
 	{0xffff, 0x0000, "halt", halt_emu},
 	{0x0, 0x0, NULL, NULL}
 };

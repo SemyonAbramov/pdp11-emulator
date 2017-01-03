@@ -10,7 +10,8 @@
 #define KB_INTERRUPT_VEC	0x30	 //	48 in dec
 #define KB_STAT_REG			0x0FF70
 #define KB_DATA_REG			0x0FF72
-
+#define OUT_STAT_REG		0177564
+#define OUT_DATA_REG		0177566 
 
 #define PS_ADDR			0x0FFFE
 #define PS_INIT_MASK 	0x0003		//0b0000000000000011	
@@ -72,6 +73,9 @@ typedef struct vcpu
 	uint16_t* kb_stat_reg;
 	uint16_t* kb_data_reg;
 
+	uint16_t* out_stat_reg;
+	uint16_t* out_data_reg;
+
 } vcpu_t;
 
 typedef enum exec_status
@@ -83,6 +87,25 @@ typedef enum exec_status
 
 struct vcpu vcpu;
 
+
+#define INIT_OUT_STAT_REG(vcpu)	\
+	do {	\
+		*(vcpu->out_stat_reg) = 0200;	\
+ 	} while (0)
+
+/*
+#define SET_OUT_STAT_REG(vcpu)	\
+	do {	\
+		*(vcpu->out_stat_reg) = 0200;	\
+ 	} while (0)
+
+#define RESET_OUT_STAT_REG(vcpu)	\
+	do {	\
+		*(vcpu->out_stat_reg) &= 0x0000;	\
+	} while (0)
+*/
+
+/* FIXME: WTF ? Why here &= ??? */
 
 #define SET_KB_STAT_REG(vcpu)	\
 	do {	\
