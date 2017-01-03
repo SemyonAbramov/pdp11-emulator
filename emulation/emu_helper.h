@@ -5,6 +5,7 @@
 #include "decode/decode.h"
 #include "stdint.h"
 
+
 uint16_t fetch_word_from_mem(vcpu_t* vcpu);
 uint16_t get_reg_op(vcpu_t* vcpu, uint16_t disp, uint16_t isa_mode);
 uint16_t get_reg_def_op(vcpu_t* vcpu, uint16_t disp, uint16_t isa_mode, uint8_t** address);

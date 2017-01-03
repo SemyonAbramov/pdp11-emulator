@@ -5,15 +5,20 @@
 
 struct instr_desc;
 
-
 typedef enum decode_status
 {
 	DECODE_SUCCESS,
 	DECODE_UNDEFINED	
 } decode_status_t;
 
+typedef enum instr_mode
+{
+	WORD_MODE,
+	BYTE_MODE	
+} instr_mode_t;
+
 typedef decode_status_t (*decode_call_t)(vcpu_t *vcpu, struct instr_desc *instr, instr_t op);
-typedef exec_status_t (*emu_call_t)(vcpu_t *vcpu, struct instr_desc *instr, instr_t op);
+typedef exec_status_t (*emu_call_t)(vcpu_t *vcpu, struct instr_desc *instr, instr_t op, instr_mode_t mode);
 
 typedef struct instr_desc
 {
@@ -21,6 +26,7 @@ typedef struct instr_desc
 	uint16_t value;
 	const char *name;
 	emu_call_t execute;
+	instr_mode_t mode;
 } instr_desc_t;
 
 /* ADDRESSING MODES */

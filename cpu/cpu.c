@@ -229,7 +229,7 @@ exec_status_t cpu_exec(vcpu_t* vcpu)
 	if (instr == NULL)				// FIXME: Need to deal with it properly
 		return EXEC_UNDEFINED;		// Such case lead to seg fault, need to fix
 
-	exec_status_t st = instr->execute(vcpu, instr, op);
+	exec_status_t st = instr->execute(vcpu, instr, op, instr->mode);
 
 	return st;
 }
