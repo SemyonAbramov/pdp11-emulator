@@ -87,6 +87,104 @@ typedef enum exec_status
 
 struct vcpu vcpu;
 
+#define GET_HI_BIT(val, mode)	((val >> (15 - 8 * mode)) & 0x0001)			
+
+#define SET_N(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).n = 1;	\
+	} while (0)
+
+#define CLEAR_N(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).n = 0;	\
+	} while (0)
+
+#define SET_Z(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).z = 1;	\
+	} while (0)
+
+#define CLEAR_Z(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).z = 0;	\
+	} while (0)
+
+#define SET_V(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).v = 1;	\
+	} while (0)
+
+#define CLEAR_V(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).v = 0;	\
+	} while (0)
+
+#define SET_C(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).c = 1;	\
+	} while (0)
+
+#define CLEAR_C(vcpu)	\
+	do {	\
+		(*(vcpu->psw)).c = 0;	\
+	} while (0)
+
+#define LOAD_N(vcpu, val, mode)	\
+	do {	\
+		(*(vcpu->psw)).n = ((val & (0x8000 >> (mode * 8))) >> (15 - 8 * mode));	\
+	} while (0)
+
+#define LOAD_Z(vcpu, val)	\
+	do {	\
+		if (val == 0)	\
+			SET_Z(vcpu);	\
+		else	\
+			CLEAR_Z(vcpu); \
+	} while (0)
+
+#define LOAD_V(vcpu, flag)	\
+	do {	\
+		(*(vcpu->psw)).v = flag;	\
+	} while (0)
+
+#define ADD_OVF_HANDLER(vcpu, src, dst_src, dst, mode)	\
+	do {	\
+		if ((GET_HI_BIT(src, mode) == 1 && GET_HI_BIT(dst_src, mode) == 1 && GET_HI_BIT(dst, mode) == 0) ||	\
+			(GET_HI_BIT(src, mode) == 0 && GET_HI_BIT(dst_src, mode) == 0 && GET_HI_BIT(dst, mode) == 1))	\
+			SET_V(vcpu);	\
+		else	\
+			CLEAR_V(vcpu);	\
+	} while (0)
+
+#define SUB_OVF_HANDLER(vcpu, src, dst_src, dst, mode)	\
+	do {	\
+		if ((GET_HI_BIT(src, mode) == 1 && GET_HI_BIT(dst_src, mode) == 0 && GET_HI_BIT(dst, mode) == 1) ||	\
+			(GET_HI_BIT(src, mode) == 0 && GET_HI_BIT(dst_src, mode) == 1 && GET_HI_BIT(dst, mode) == 0))	\
+			SET_V(vcpu);	\
+		else	\
+			CLEAR_V(vcpu);	\
+	} while (0)
+
+#define LOAD_C(vcpu, flag)	\
+	do {	\
+		(*(vcpu->psw)).c = flag;	\
+	} while (0)
+
+#define ADD_CARRY_HANDLER(vcpu, src, dst_src, dst, mode)	\
+	do {	\
+		if ((GET_HI_BIT(src, mode) == 1 || GET_HI_BIT(dst_src, mode) == 1) && GET_HI_BIT(dst, mode) == 0)	\
+			SET_C(vcpu);	\
+		else	\
+			CLEAR_C(vcpu);	\
+	} while (0)
+
+#define SUB_CARRY_HANDLER(vcpu, src, dst_src, dst, mode)	\
+	do {	\
+		if ((GET_HI_BIT(src, mode) == 1 || GET_HI_BIT(dst_src, mode) == 1) && GET_HI_BIT(dst, mode) == 0)	\
+			CLEAR_C(vcpu);	\
+		else	\
+			SET_C(vcpu);	\
+	} while (0)
 
 #define INIT_OUT_STAT_REG(vcpu)	\
 	do {	\
@@ -151,69 +249,9 @@ struct vcpu vcpu;
 		bit_v = (*(vcpu->psw)).v;	\
 	} while (0)
 
-#define LOAD_N(vcpu, flag)	\
-	do {	\
-		(*(vcpu->psw)).n = flag;	\
-	} while (0)
-
-#define LOAD_Z(vcpu, flag)	\
-	do {	\
-		(*(vcpu->psw)).z = flag;	\
-	} while (0)
-
-#define LOAD_V(vcpu, flag)	\
-	do {	\
-		(*(vcpu->psw)).v = flag;	\
-	} while (0)
-
-#define LOAD_C(vcpu, flag)	\
-	do {	\
-		(*(vcpu->psw)).c = flag;	\
-	} while (0)		
-
-#define SET_C(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val |= 0x8000;	\
-	} while (0)
-
-#define SET_V(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val |= 0x4000;	\
-	} while (0)
-
-#define SET_Z(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val |= 0x2000;	\
-	} while (0)
-
-#define SET_N(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val |= 0x1000;	\
-	} while (0)
-
 #define SET_T(vcpu)	\
 	do {	\
 		(*(vcpu->psw)).reg_val |= 0x0800;	\
-	} while (0)
-
-#define CLEAR_C(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val &= 0x7fff;	\
-	} while (0)
-
-#define CLEAR_V(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val &= 0xbfff;	\
-	} while (0)
-
-#define CLEAR_Z(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val &= 0xdfff;	\
-	} while (0)
-
-#define CLEAR_N(vcpu)	\
-	do {	\
-		(*(vcpu->psw)).reg_val &= 0xefff;	\
 	} while (0)
 
 #define CLEAR_T(vcpu)	\

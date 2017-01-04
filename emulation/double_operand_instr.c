@@ -47,14 +47,14 @@ exec_status_t mov_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 	GET_SOURCE(op, src_disp);
 	GET_DST(op, dst_disp);
 
+/*
 	printf("dst mode: %o\n", dst_mode);
 	printf("src mode: %o\n", src_mode);
 
 	printf("dst disp: %d\n", dst_disp);
 	printf("src disp: %d\n", src_disp);
 	printf("mode: %o\n", mode);
-
-
+*/
 	uint8_t* src_addr;
 	src = fetch_op_general(vcpu, src_disp, src_mode, mode, &src_addr);
 
@@ -65,13 +65,8 @@ exec_status_t mov_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 
-	LOAD_N(vcpu, (src & (0x8000 >> (mode * 8))) >> (15 - 8 * mode));
-
-	if (src == 0)	
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);
-
+	LOAD_N(vcpu, src, mode);
+	LOAD_Z(vcpu, src);
 	CLEAR_V(vcpu);	
 
 	return EXEC_SUCCESS;
@@ -102,23 +97,11 @@ exec_status_t add_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 	
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);	
 
-	if (dst < 0)
-		SET_N(vcpu);
-	else
-		CLEAR_N(vcpu);
-
-	if (dst == 0)
-		SET_Z(vcpu);
-	else
-		CLEAR_Z(vcpu);
-
-	if ((src_dst * src >= 0 && dst < 0) || (src_dst * src > 0 && dst <= 0))
-		SET_V(vcpu);
-	else
-		CLEAR_V(vcpu);
-
-	/* Need to handle carry issue */
-
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
+	ADD_OVF_HANDLER(vcpu, src, src_dst, dst, mode);
+	ADD_CARRY_HANDLER(vcpu, src, src_dst, dst, mode);
+	
 	return EXEC_SUCCESS;
 }
 
@@ -146,22 +129,10 @@ exec_status_t sub_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 	
-	if (dst < 0)
-		SET_N(vcpu);
-	else
-		CLEAR_N(vcpu);	
-
-	if (dst == 0)
-		SET_Z(vcpu);
-	else
-		CLEAR_Z(vcpu);
-
-	if ((src_dst * src <= 0) && (src * dst >= 0))
-		SET_V(vcpu);
-	else
-		CLEAR_V(vcpu);
-
-	/* Carry flag handle */
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
+	SUB_OVF_HANDLER(vcpu, src, src_dst, dst, mode);
+	SUB_CARRY_HANDLER(vcpu, src, src_dst, dst, mode);
 
 	return EXEC_SUCCESS;
 }

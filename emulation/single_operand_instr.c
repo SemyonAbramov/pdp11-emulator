@@ -44,15 +44,10 @@ exec_status_t com_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 	
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);	
 
-	LOAD_N(vcpu, dst & (0x8000 >> (mode * 8)));
-
-	if (dst == 0)
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);
-
-	LOAD_V(vcpu, 0);
-	LOAD_C(vcpu, 1);
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
+	CLEAR_V(vcpu);
+	SET_C(vcpu);
 
 	return EXEC_SUCCESS;
 }
@@ -72,17 +67,13 @@ exec_status_t inc_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 
-	LOAD_N(vcpu, dst & (0x8000 >> (mode * 8)));
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
 
-	if (dst == 0)
-		LOAD_Z(vcpu, 1);
+	if (dst == 077777)		
+		SET_V(vcpu);
 	else
-		LOAD_Z(vcpu, 0);	
-
-	if (dst == 0x7FFF)		// 077777 in octal
-		LOAD_V(vcpu, 1);
-	else
-		LOAD_V(vcpu, 0);
+		CLEAR_V(vcpu);
 
 	return EXEC_SUCCESS;
 }
@@ -103,17 +94,13 @@ exec_status_t dec_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 
-	LOAD_N(vcpu, dst & (0x8000 >> (mode * 8)));
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
 
-	if (dst == 0)
-		LOAD_Z(vcpu, 1);
+	if (src_dst == 0100000)		
+		SET_V(vcpu);
 	else
-		LOAD_Z(vcpu, 0);	
-
-	if (src_dst == 0x8000)		// 100000 in octal
-		LOAD_V(vcpu, 1);
-	else
-		LOAD_V(vcpu, 0);
+		CLEAR_V(vcpu);
 
 	return EXEC_SUCCESS;
 }
@@ -133,27 +120,21 @@ exec_status_t neg_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 
-	LOAD_N(vcpu, dst & (0x8000 >> (mode * 8)));
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
+
+	if (dst == 0100000)		
+		SET_V(vcpu);
+	else
+		CLEAR_V(vcpu);
 
 	if (dst == 0)
-	{	
-		LOAD_Z(vcpu, 1);
-		LOAD_C(vcpu, 0);	
-	}
-	else
-	{	
-		LOAD_Z(vcpu, 0);	
-		LOAD_C(vcpu, 1);
-	}
-
-	if (dst == 0x8000)		// 100000 in octal
-		LOAD_V(vcpu, 1);
-	else
-		LOAD_V(vcpu, 0);
+		CLEAR_C(vcpu);	
+	else	
+		SET_C(vcpu);
 
 	return EXEC_SUCCESS;
 }
-
 
 exec_status_t tst_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_mode_t mode)
 {
@@ -166,15 +147,10 @@ exec_status_t tst_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	dst = fetch_op_general(vcpu, dst_disp, dst_mode, mode, &dst_addr);	
 
-	LOAD_N(vcpu, (dst & (0x8000 >> (mode * 8))) >> (15 - 8 * mode));
-
-	if (dst == 0)	
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);	
-	
-	LOAD_V(vcpu, 0);
-	LOAD_C(vcpu, 0);
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
+	CLEAR_V(vcpu);
+	CLEAR_C(vcpu);
 
 	return EXEC_SUCCESS;
 }
@@ -199,16 +175,10 @@ exec_status_t asr_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 	dst = (dst >> 1) | high_bit;
 	high_bit = high_bit >> (15 - (8 * mode));
 	
-//	writeback_src_ops(vcpu, dst_disp, dst_mode, isa_mode);
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);	
 
-	LOAD_N(vcpu, high_bit);
-
-	if (dst == 0)
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);
-
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
 	LOAD_V(vcpu, high_bit ^ low_bit);
 	LOAD_C(vcpu, low_bit);
 
@@ -235,19 +205,13 @@ exec_status_t asl_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 
-	LOAD_N(vcpu, neg_bit);
-
-	if (dst == 0)
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);
-
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
 	LOAD_V(vcpu, neg_bit ^ high_bit);
 	LOAD_C(vcpu, high_bit);
 
 	return EXEC_SUCCESS;
 }
-
 
 exec_status_t ror_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_mode_t mode)
 {
@@ -271,13 +235,8 @@ exec_status_t ror_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 
-	LOAD_N(vcpu, prev_bit_c);
-
-	if (dst == 0)
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);
-
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
 	LOAD_V(vcpu, prev_bit_c ^ low_bit);
 	LOAD_C(vcpu, low_bit);	
 
@@ -310,14 +269,9 @@ exec_status_t rol_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr_
 	neg_bit = dst & (0x8000 >> (8 * mode)); 
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
-
-	LOAD_N(vcpu, neg_bit);	
-
-	if (dst == 0)
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);
-
+	
+	LOAD_N(vcpu, dst, mode);
+	LOAD_Z(vcpu, dst);
 	LOAD_V(vcpu, neg_bit ^ high_bit);
 	LOAD_C(vcpu, high_bit);
 
@@ -346,16 +300,10 @@ exec_status_t swab_emu(vcpu_t* vcpu, struct instr_desc *instr, instr_t op, instr
 
 	writeback_dst_ops(vcpu, dst, dst_disp, dst_mode, mode, dst_addr);
 
-
-	LOAD_N(vcpu, (dst & 0x0080) >> 7);
-
-	if ((dst & 0x00ff) == 0)
-		LOAD_Z(vcpu, 1);
-	else
-		LOAD_Z(vcpu, 0);
-
-	LOAD_V(vcpu, 0);
-	LOAD_C(vcpu, 0);
+	LOAD_N(vcpu, dst, 0);
+	LOAD_Z(vcpu, dst);
+	CLEAR_V(vcpu);
+	CLEAR_C(vcpu);
 
 	return EXEC_SUCCESS;
 }
